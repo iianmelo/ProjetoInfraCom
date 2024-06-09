@@ -4,7 +4,7 @@ import time
 #binding => ip:porta => localhost:8080
 # MAX_BUFF => tam max msg (bytes)
 
-class UDP():
+class UDPClient():
     def __init__(self, sckt_family, sckt_type, sckt_binding, MAX_BUFF):
         self.sckt = skt.socket(sckt_family, sckt_type)
         self.sckt.bind(sckt_binding)
@@ -15,12 +15,16 @@ class UDP():
     
         self.MAX_BUFF = MAX_BUFF
 
-    def listen(self):
+    def listen(self, server_addr: tuple[str, str]):
         while True:
             try:
                 data, origin = self.sckt.recvfrom(self.MAX_BUFF)
+                if str(data) == "STOP": #
+                    self.send(server_addr, "To saindo".encode())
+                    self.sckt.close()
+                    break
             except:
-                continue
+                continue # Avoid timeout errors
         
     def send(self, server_addr: tuple[str, str], msg: bytes):
         # server_addr: (localhost, 8081)
@@ -29,8 +33,9 @@ class UDP():
 
 MAX_BUFF_SIZE = 1024 # Bytes (1KB)
 
-addr_bind = ('localhost', 8080)
-addr_target = ('127.0.0.1', 7070)
+addr_bind = ('localhost', 8080) # porta que o cliente será vinculado
+addr_target = ('127.0.0.1', 7070) # porta que o cliente irá enviar dados (servidor)
 
-client = UDP(skt.AF_INET, skt.SOCK_DGRAM, addr_bind, MAX_BUFF_SIZE)
+client = UDPClient(skt.AF_INET, skt.SOCK_DGRAM, addr_bind, MAX_BUFF_SIZE)
+client.send(addr_target, "STOP".encode())
 client.listen()
