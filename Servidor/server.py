@@ -56,6 +56,7 @@ class UDPServer():
                     data, addr = self.sckt.recvfrom(self.MAX_BUFF)
                     if data == self.EOF_MARKER:
                         print("EOF marker received. File transfer complete.")
+                        #os.rename(nome.decode(), 'Funcionou_'+nome.decode())
                         self.send(addr, nome)
                         break
                     if data:

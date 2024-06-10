@@ -1,5 +1,6 @@
 import socket as skt
 import time
+import os
 
 #binding => ip:porta => localhost:7070
 # MAX_BUFF => tam max msg (bytes)
@@ -41,6 +42,7 @@ class UDPClient():
         while True:
             try:
                 nome, end = self.sckt.recvfrom(self.MAX_BUFF)
+                #os.rename(nome.decode(), 'Funcionou_'+nome.decode())
                 if nome: 
                     break
             except:
@@ -70,8 +72,8 @@ class UDPClient():
 def main():
     client = UDPClient(skt.AF_INET, skt.SOCK_DGRAM, addr_bind, MAX_BUFF_SIZE)
     print("Client started.")
-    client.send(addr_target, 'ImagemParaTranferencia.png'.encode())
-    client.send_file('ImagemParaTranferencia.png', addr_target)
+    client.send(addr_target, 'Imagem.png'.encode())
+    client.send_file('Imagem.png', addr_target)
     client.listen()
 
 main()
