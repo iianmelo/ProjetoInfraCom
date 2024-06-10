@@ -36,7 +36,7 @@ class UDPServer():
                 if not data:
                     break
                 self.send(client_addr, data)
-        self.send(server_addr, self.EOF_MARKER)
+        self.send(client_addr, self.EOF_MARKER)
 
     def receive_file(self, file_path):
         with open(file_path, 'wb') as file:
@@ -65,4 +65,4 @@ addr_target = ('localhost', 8080) # porta que o servidor irá enviar dados (clie
 server = UDPServer(skt.AF_INET, skt.SOCK_DGRAM, addr_bind, MAX_BUFF_SIZE)
 print("Server started.")
 
-server.receive_file('received.txt')
+server.receive_file('imagemNova.png')
