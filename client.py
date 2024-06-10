@@ -21,19 +21,6 @@ class UDPClient():
     
         self.MAX_BUFF = MAX_BUFF
 
-    def listen(self, server_addr: tuple[str, str]):
-        while True:
-            print("Listening... (client)")
-            try:
-                data, origin = self.sckt.recvfrom(self.MAX_BUFF)
-                print(data.decode())
-                if data.decode() == "STOP":
-                    print("Server stopped the connection.")
-                    self.sckt.close()
-                    break
-            except:
-                continue
-
     def send(self, server_addr: tuple[str, str], msg: bytes):
         # client_addr: (localhost, 8080)
         self.sckt.sendto(msg, server_addr)
@@ -48,16 +35,43 @@ class UDPClient():
                     break
                 self.send(server_addr, data)
         self.send(server_addr, self.EOF_MARKER)
-
-    def receive_file(self, file_path):
-        with open(file_path, 'wb') as file:
-            while True:
-                data, addr = self.sckt.recvfrom(self.MAX_BUFF)
-                if not data:
+        
+    def listen(self):
+        print("Listening (client)...")
+        while True:
+            try:
+                nome, end = self.sckt.recvfrom(self.MAX_BUFF)
+                if nome: 
                     break
-                file.write(data)
+            except:
+                continue
+        with open('Modified_'+nome.decode(), 'wb') as file: 
+            while True:
+                try: 
+                    data, addr = self.sckt.recvfrom(self.MAX_BUFF)
+                    if data == self.EOF_MARKER:
+                        print("EOF marker received. File transfer complete.")
+                        break
+                    if data:
+                        file.write(data)
+                        #print(f"{data.decode()}")
+                        print(f"Received data from {addr}")
+                    else:
+                        break
+                except skt.timeout:
+                    continue
+                except Exception as e:
+                    print(f"An error occurred: {e}")
+                    break
 
-client = UDPClient(skt.AF_INET, skt.SOCK_DGRAM, addr_bind, MAX_BUFF_SIZE)
-print("Client started.")
 
-client.send_file('imagemParaTranferencia.png', addr_target)
+
+
+def main():
+    client = UDPClient(skt.AF_INET, skt.SOCK_DGRAM, addr_bind, MAX_BUFF_SIZE)
+    print("Client started.")
+    client.send(addr_target, 'ImagemParaTranferencia.png'.encode())
+    client.send_file('ImagemParaTranferencia.png', addr_target)
+    client.listen()
+
+main()
