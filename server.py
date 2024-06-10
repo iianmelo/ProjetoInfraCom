@@ -8,7 +8,7 @@ class UDPServer():
     def __init__(self, sckt_family, sckt_type, sckt_binding, MAX_BUFF):
         self.sckt = skt.socket(sckt_family, sckt_type)
         self.sckt.bind(sckt_binding)
-        self.sckt.settimeout(0.1)
+        self.sckt.settimeout(5.0)
 
         if self.sckt is None:
             raise "Socket not available."
@@ -39,10 +39,18 @@ class UDPServer():
     def receive_file(self, file_path):
         with open(file_path, 'wb') as file:
             while True:
-                data, addr = self.sckt.recvfrom(self.MAX_BUFF)
-                if not data:
+                try: 
+                    data, addr = self.sckt.recvfrom(self.MAX_BUFF)
+                    if data:
+                        file.write(data)
+                        print(f"Received data from {addr}")
+                    else:
+                        break
+                except skt.timeout:
+                    continue
+                except Exception as e:
+                    print(f"An error occurred: {e}")
                     break
-                file.write(data)
 
 MAX_BUFF_SIZE = 1024 # Bytes (1KB)
 
