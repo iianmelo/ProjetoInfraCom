@@ -14,6 +14,7 @@ class UDPClient():
         self.sckt = skt.socket(sckt_family, sckt_type)
         self.sckt.bind(sckt_binding)
         self.sckt.settimeout(0.1)
+        self.EOF_MARKER = b"EOF"
 
         if self.sckt is None:
             raise "Socket not available."
@@ -46,6 +47,7 @@ class UDPClient():
                     print("File sent.")
                     break
                 self.send(server_addr, data)
+        self.send(server_addr, self.EOF_MARKER)
 
     def receive_file(self, file_path):
         with open(file_path, 'wb') as file:

@@ -14,6 +14,7 @@ class UDPServer():
             raise "Socket not available."
     
         self.MAX_BUFF = MAX_BUFF
+        self.EOF_MARKER = b"EOF"
 
     def listen(self, client_addr: tuple[str, str]):
         print("Listening (server)...")
@@ -35,12 +36,16 @@ class UDPServer():
                 if not data:
                     break
                 self.send(client_addr, data)
+        self.send(server_addr, self.EOF_MARKER)
 
     def receive_file(self, file_path):
         with open(file_path, 'wb') as file:
             while True:
                 try: 
                     data, addr = self.sckt.recvfrom(self.MAX_BUFF)
+                    if data == self.EOF_MARKER:
+                        print("EOF marker received. File transfer complete.")
+                        break
                     if data:
                         file.write(data)
                         print(f"Received data from {addr}")
