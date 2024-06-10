@@ -60,4 +60,4 @@ class UDPClient():
 client = UDPClient(skt.AF_INET, skt.SOCK_DGRAM, addr_bind, MAX_BUFF_SIZE)
 print("Client started.")
 
-client.send_file('hello.txt', addr_target)
+client.send_file('imagemParaTranferencia.png', addr_target)
