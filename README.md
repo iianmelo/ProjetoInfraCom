@@ -8,7 +8,7 @@ INSTRUÇÕES PARA EXECUTAR:
 
 3 - Rode primeiro `python server.py` no `<Servidor>` e `python client.py` no `<Cliente>` em seguida.
 
-4 - É necessário escolher o arquivo que será enviado pelo cliente. (Como o aquivo `hello.txt` ou a imagem `Imagem.png`).
+4 - É necessário escolher o arquivo que será enviado pelo cliente. (p.ex. o aquivo `hello.txt` ou a imagem `Imagem.png`).
 
 Após isso, o servidor irá receber a mensagem que o cliente está enviando e devolver o arquivo com o nome alterado.
 
