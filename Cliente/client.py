@@ -47,7 +47,7 @@ class UDPClient():
                     break
             except:
                 continue
-        with open('Modified_'+nome.decode(), 'wb') as file: 
+        with open(nome.decode(), 'wb') as file: 
             while True:
                 try: 
                     data, addr = self.sckt.recvfrom(self.MAX_BUFF)

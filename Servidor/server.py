@@ -57,7 +57,7 @@ class UDPServer():
                     if data == self.EOF_MARKER:
                         print("EOF marker received. File transfer complete.")
                         #os.rename(nome.decode(), 'Funcionou_'+nome.decode())
-                        self.send(addr, nome)
+                        self.send(addr, ('Modified_'+nome.decode()).encode())
                         break
                     if data:
                         file.write(data)
