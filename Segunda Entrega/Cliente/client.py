@@ -79,8 +79,8 @@ class UDPClient():
 def main():
     client = UDPClient(skt.AF_INET, skt.SOCK_DGRAM, addr_bind, MAX_BUFF_SIZE)
     print("Client started.")
-    client.send(addr_target, 'Hello.txt'.encode(), 0)      #Envia o nome do arquivo para o servidor.
+    client.send(addr_target, 'imagem.png'.encode(), 0)      #Envia o nome do arquivo para o servidor.
     print("Name sent")
-    client.send_file('Hello.txt', addr_target)          #Envia o arquivo para o servidor.
-    
+    client.send_file('imagem.png', addr_target)          #Envia o arquivo para o servidor.
+
 main()

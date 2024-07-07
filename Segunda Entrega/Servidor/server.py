@@ -49,7 +49,8 @@ class UDPServer():
                     seq_num, data = segment[0], segment[1:] #Separa o número de sequência dos dados.
                     if data == self.EOF_MARKER:
                         print("EOF marker received. File transfer complete.")
-                        self.send(addr, ('Modified_'+ nome.decode()).encode()) #envia o nome do arquivo que foi recebido com o nome alterado.
+
+                        self.send(addr, seq_num.to_bytes(1, 'big')) #envia o nome do arquivo que foi recebido com o nome alterado.
                         break
                     if seq_num == expected_seq_num:
                         file.write(data)
@@ -65,7 +66,6 @@ class UDPServer():
                 except Exception as e:
                     print(f"An error occurred: {e}")
                     break
-        #self.send_file('Server_'+ nome.decode(), addr) #envia o arquivo que foi recebido de volta para o cliente.
 
 MAX_BUFF_SIZE = 1024 # Bytes (1KB)
 
