@@ -1,4 +1,5 @@
 import socket as skt
+import random
 import time
 import os
 
@@ -19,7 +20,7 @@ class UDPClient():
     
         self.MAX_BUFF = MAX_BUFF #Tamanho máximo do buffer;
 
-    def send(self, server_addr: tuple[str, str], msg: bytes, seq_num: int):
+    def send(self, server_addr: tuple[str, str], msg: bytes, seq_num: int): # envia pacotes do arquivo para o servidor
         # client_addr: (localhost, 8080)
         seq_num_bytes = seq_num.to_bytes(1, byteorder='big')  # Convertendo o número de sequência para 1 byte
         msg_with_seq = seq_num_bytes + msg  # Concatenando o número de sequência com a mensagem
@@ -34,28 +35,28 @@ class UDPClient():
             except skt.timeout:
                 continue  # Timeout, reenviar pacote
 
-    def send_file(self, file_path, server_addr: tuple[str, str]):
+    def send_file(self, file_path, server_addr: tuple[str, str]): # envia o arquivo para o servidor
         seq_num = 1 # Inicializa o número de sequência como 1 já que o nome do aruivo é enviado com o número de sequência 0. 
         with open(file_path, 'rb') as file:
             while True:
-                data = file.read(self.MAX_BUFF - 1) #Lê o arquivo em partes iguais ao MAX_BUFF, e continua de onde parou até o final do arquivo.
+                data = file.read(self.MAX_BUFF - 1) # Lê o arquivo em partes iguais ao MAX_BUFF, e continua de onde parou até o final do arquivo.
                 if not data:
-                    print("File sent.")
                     break
-                self.send(server_addr, data, seq_num)    #Envia os dados do arquivo.
+                self.send(server_addr, data, seq_num)    # Envia os dados do arquivo.
                 seq_num = 1 if seq_num == 0 else 0 # Alterna o numero de seq dos pacotes entre 0 e 1.
-        self.send(server_addr, self.EOF_MARKER, seq_num) #Envia para o servidor um sinal de que o arquivo acabou.
+        self.send(server_addr, self.EOF_MARKER, seq_num) # Envia para o servidor um sinal de que o arquivo acabou.
+        print("File sent.")
         
     def listen(self):
         print("Listening (client)...")
         while True:
             try:
-                nome, end = self.sckt.recvfrom(self.MAX_BUFF) #Recebe o nome do arquivo do servidor, já alterado.
+                nome, end = self.sckt.recvfrom(self.MAX_BUFF) # Recebe o nome do arquivo do servidor, já alterado.
                 if nome: 
                     break
             except:
                 continue
-        with open(nome.decode(), 'wb') as file:           #Recebe a devolução do arquivo pelo servidor.
+        with open(nome.decode(), 'wb') as file:           # Recebe a devolução do arquivo pelo servidor.
             while True:
                 try: 
                     data, addr = self.sckt.recvfrom(self.MAX_BUFF)
@@ -73,14 +74,11 @@ class UDPClient():
                     print(f"An error occurred: {e}")
                     break
 
-
-
-
 def main():
     client = UDPClient(skt.AF_INET, skt.SOCK_DGRAM, addr_bind, MAX_BUFF_SIZE)
     print("Client started.")
-    client.send(addr_target, 'imagem.png'.encode(), 0)      #Envia o nome do arquivo para o servidor.
+    client.send(addr_target, 'Imagem.png'.encode(), 0)      #Envia o nome do arquivo para o servidor.
     print("Name sent")
-    client.send_file('imagem.png', addr_target)          #Envia o arquivo para o servidor.
+    client.send_file('Imagem.png', addr_target)          #Envia o arquivo para o servidor.
 
 main()

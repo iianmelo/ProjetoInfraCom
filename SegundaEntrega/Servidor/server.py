@@ -1,4 +1,5 @@
 import socket as skt
+import random
 import time
 import os
 
@@ -34,6 +35,9 @@ class UDPServer():
             try:
                 nome, end = self.sckt.recvfrom(self.MAX_BUFF) #Recebe o nome do arquivo enviado pelo cliente.
                 seq_num , nome = nome[0], nome[1:] #Separa o número de sequência do nome do arquivo.
+                if random.random() < 0.1:
+                    print(f"Simulated packet loss for file name with seq_num: {seq_num}")
+                    continue  # Simula a perda do pacote ignorando o restante do código no loop
                 if nome:
                     self.send(end, seq_num.to_bytes(1, 'big')) #Envia o nome do arquivo para o cliente.
                     print(f'Server sent ACK to data with seq_num: {seq_num}')
@@ -42,20 +46,24 @@ class UDPServer():
                 continue
 
         with open('Server_' + nome.decode(), 'wb') as file: 
-            expected_seq_num = 0 # Inicializa o número de sequência esperado como 0.
+            expected_seq_num = 1 # Inicializa o número de sequência esperado como 1.
             while True:
-                try: 
+                try:
                     segment, addr = self.sckt.recvfrom(self.MAX_BUFF)
-                    seq_num, data = segment[0], segment[1:] #Separa o número de sequência dos dados.
+                    # Simula a perda de pacote com 10% de probabilidade
+                    if random.random() < 0.1:
+                        seq_num, data = segment[0], segment[1:] # Separa o número de sequência dos dados.
+                        print(f"Simulated packet loss for data with seq_num: {seq_num}")
+                        continue  # Simula a perda do pacote ignorando o restante do código no loop
+                    seq_num, data = segment[0], segment[1:] # Separa o número de sequência dos dados.
                     if data == self.EOF_MARKER:
                         print("EOF marker received. File transfer complete.")
-
-                        self.send(addr, seq_num.to_bytes(1, 'big')) #envia o nome do arquivo que foi recebido com o nome alterado.
+                        self.send(addr, seq_num.to_bytes(1, 'big')) # Envia o nome do arquivo que foi recebido com o nome alterado.
                         break
                     if seq_num == expected_seq_num:
                         file.write(data)
-                        print(f"Received data from {addr} withs seq_num: {seq_num}")
-                        self.send(addr, seq_num.to_bytes(1, 'big')) #Envia um ACK para o cliente.
+                        print(f"Received data from {addr} with seq_num: {seq_num}")
+                        self.send(addr, seq_num.to_bytes(1, 'big')) # Envia um ACK para o cliente.
                         print(f'Server sent ACK to data with seq_num: {seq_num}')
                         expected_seq_num = 1 if expected_seq_num == 0 else 0 # Alterna o número de sequência esperado entre 0 e 1.
                     else:
