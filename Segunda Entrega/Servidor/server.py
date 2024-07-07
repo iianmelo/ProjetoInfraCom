@@ -8,15 +8,13 @@ class UDPServer():
         self.sckt = skt.socket(sckt_family, sckt_type)
         self.sckt.bind(sckt_binding)
         self.sckt.settimeout(5.0)
+        self.EOF_MARKER = b"EOF"  #Variável criada para marcar o final do arquivo enviado.
+        self.MAX_BUFF = MAX_BUFF #Define o tamanho máximo do buffer.
         #Verifica se o socket foi criado.
+        
         if self.sckt is None:
             raise "Socket not available."
         
-        #Define o tamanho máximo do buffer.
-        self.MAX_BUFF = MAX_BUFF
-        #Variável criada para marcar o final do arquivo enviado.
-        self.EOF_MARKER = b"EOF"
-
     def send(self, client_addr: tuple[str, str], msg: bytes):
         self.sckt.sendto(msg, client_addr)
         time.sleep(0.0001)
@@ -35,29 +33,39 @@ class UDPServer():
         while True:
             try:
                 nome, end = self.sckt.recvfrom(self.MAX_BUFF) #Recebe o nome do arquivo enviado pelo cliente.
-                if nome: 
+                seq_num , nome = nome[0], nome[1:] #Separa o número de sequência do nome do arquivo.
+                if nome:
+                    self.send(end, seq_num.to_bytes(1, 'big')) #Envia o nome do arquivo para o cliente.
+                    print(f'Server sent ACK to data with seq_num: {seq_num}')
                     break
             except:
                 continue
-        with open('Server_'+nome.decode(), 'wb') as file: 
+
+        with open('Server_' + nome.decode(), 'wb') as file: 
+            expected_seq_num = 0 # Inicializa o número de sequência esperado como 0.
             while True:
                 try: 
-                    data, addr = self.sckt.recvfrom(self.MAX_BUFF)
+                    segment, addr = self.sckt.recvfrom(self.MAX_BUFF)
+                    seq_num, data = segment[0], segment[1:] #Separa o número de sequência dos dados.
                     if data == self.EOF_MARKER:
                         print("EOF marker received. File transfer complete.")
-                        self.send(addr, ('Modified_'+nome.decode()).encode()) #envia o nome do arquivo que foi recebido com o nome alterado.
+                        self.send(addr, ('Modified_'+ nome.decode()).encode()) #envia o nome do arquivo que foi recebido com o nome alterado.
                         break
-                    if data:
+                    if seq_num == expected_seq_num:
                         file.write(data)
-                        print(f"Received data from {addr}")
+                        print(f"Received data from {addr} withs seq_num: {seq_num}")
+                        self.send(addr, seq_num.to_bytes(1, 'big')) #Envia um ACK para o cliente.
+                        print(f'Server sent ACK to data with seq_num: {seq_num}')
+                        expected_seq_num = 1 if expected_seq_num == 0 else 0 # Alterna o número de sequência esperado entre 0 e 1.
                     else:
-                        break
+                        # Se o número de sequência não for o esperado, reenvia o ACK do último pacote recebido corretamente
+                        self.send(addr, ((expected_seq_num + 1) % 2).to_bytes(1, 'big'))
                 except skt.timeout:
                     continue
                 except Exception as e:
                     print(f"An error occurred: {e}")
                     break
-        self.send_file('Server_'+nome.decode(), addr) #envia o arquivo que foi recebido de volta para o cliente.
+        #self.send_file('Server_'+ nome.decode(), addr) #envia o arquivo que foi recebido de volta para o cliente.
 
 MAX_BUFF_SIZE = 1024 # Bytes (1KB)
 
