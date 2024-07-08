@@ -33,6 +33,7 @@ class UDPClient():
                 if ack == seq_num_bytes:
                     break  # ACK correto recebido, sair do loop
             except skt.timeout:
+                print(f"Timeout for data with seq_num {int.from_bytes(seq_num_bytes, byteorder='big')}")
                 continue  # Timeout, reenviar pacote
 
     def send_file(self, file_path, server_addr: tuple[str, str]): # envia o arquivo para o servidor
