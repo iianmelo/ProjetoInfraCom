@@ -5,7 +5,7 @@ import os
 
 MAX_BUFF_SIZE = 1024 # Bytes (1KB)
 
-addr_bind = ('localhost', 8080) # porta que o cliente será vinculado
+addr_bind = ('192.168.100.100', 8080) # porta que o cliente será vinculado / cada cliente deve ter uma porta diferente
 addr_target = ('127.0.0.1', 7070) # porta que o client irá enviar dados (servidor)
 clients = {}
 accomodations = {}
@@ -23,7 +23,6 @@ class UDPClient():
         self.MAX_BUFF = MAX_BUFF #Tamanho máximo do buffer;
 
     def send(self, server_addr: tuple[str, str], msg: bytes, seq_num: int): # envia pacotes do arquivo para o servidor
-        # client_addr: (localhost, 8080)
         seq_num_bytes = seq_num.to_bytes(1, byteorder='big')  # Convertendo o número de sequência para 1 byte
         msg_with_seq = seq_num_bytes + msg  # Concatenando o número de sequência com a mensagem
 
@@ -35,17 +34,15 @@ class UDPClient():
                 if ack == seq_num_bytes:
                     break  # ACK correto recebido, sair do loop
             except skt.timeout:
-                print(f"Timeout for data with seq_num {int.from_bytes(seq_num_bytes, byteorder='big')}")
                 continue  # Timeout, reenviar pacote
-            ##NOVO BLOCO DE CÓDIGO
+           
+            ##COMANDOS
             command = input("Digite o comando: ")
             if command.startswith("login"):
-                #rdt_send(data)
-                self.sckt.sendto(command.encode(), server_addr)
+                self.sckt.sendto(command.encode(), server_addr) #
                 response, _ = self.sckt.recvfrom(self.MAX_BUFF)
                 print(response.decode())
             elif command == "logout":
-                #rdt_send(data)
                 self.sckt.sendto(command.encode(), server_addr)
                 response, _ = self.sckt.recvfrom(self.MAX_BUFF)
                 print(response.decode())
@@ -65,17 +62,21 @@ class UDPClient():
                 print(response.decode())
             #####################
 
-    def send_file(self, file_path, server_addr: tuple[str, str]): # envia o arquivo para o servidor
-        seq_num = 1 # Inicializa o número de sequência como 1 já que o nome do aruivo é enviado com o número de sequência 0. 
-        with open(file_path, 'rb') as file:
-            while True:
-                data = file.read(self.MAX_BUFF - 1) # Lê o arquivo em partes iguais ao MAX_BUFF, e continua de onde parou até o final do arquivo.
-                if not data:
-                    break
-                self.send(server_addr, data, seq_num)    # Envia os dados do arquivo.
-                seq_num = 1 if seq_num == 0 else 0 # Alterna o numero de seq dos pacotes entre 0 e 1.
-        self.send(server_addr, self.EOF_MARKER, seq_num) # Envia para o servidor um sinal de que o arquivo acabou.
-        print("File sent.")
+    def send_file(self, command: str, server_addr: tuple[str, int]): # Assume-se que server_addr é uma tupla de string (IP) e int (porta)
+        seq_num = 1 # Inicializa o número de sequência como 1. O nome do arquivo não é mais relevante aqui.
+        
+        # Verifica se a mensagem não excede o tamanho máximo do buffer.
+        if len(command) <= self.MAX_BUFF - 1:
+            self.send(server_addr, command.encode(), seq_num) # Envia a mensagem.
+        else:
+            # Se a mensagem for maior que o buffer, divide e envia em partes.
+            for i in range(0, len(command), self.MAX_BUFF - 1):
+                part = command[i:i+self.MAX_BUFF - 1]
+                self.send(server_addr, part.encode(), seq_num)
+                seq_num = 1 if seq_num == 0 else 0 # Alterna o número de sequência.
+
+        self.send(server_addr, self.EOF_MARKER, seq_num) # Envia sinal de que a mensagem acabou.
+        print("Message sent.")
         
     def listen(self):
         print("Listening (client)...")
@@ -86,23 +87,7 @@ class UDPClient():
                     break
             except:
                 continue
-        with open(nome.decode(), 'wb') as file:           # Recebe a devolução do arquivo pelo servidor.
-            while True:
-                try: 
-                    data, addr = self.sckt.recvfrom(self.MAX_BUFF)
-                    if data == self.EOF_MARKER:
-                        print("EOF marker received. File transfer complete.") 
-                        break
-                    if data:
-                        file.write(data)
-                        print(f"Received data from {addr}")
-                    else:
-                        break
-                except skt.timeout:
-                    continue
-                except Exception as e:
-                    print(f"An error occurred: {e}")
-                    break
+       
     
 
 
