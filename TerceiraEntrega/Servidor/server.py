@@ -9,11 +9,6 @@ addr_target = ('localhost', 8080) # porta que o servidor irá enviar dados (clie
 clients = {}
 accomodations = {}
 
-#Definindo a faixa de datas disponíveis
-data_inicio = datetime.date(2024, 7, 17)
-data_fim = datetime.date(2024, 7, 22)
-delta = datetime.timedelta(days=1)
-available_dates = {}
 
 #Criando a classe do servidor
 class UDPServer():
@@ -83,16 +78,24 @@ class UDPServer():
                             if (name_accommodation, location) in accomodations:
                                 self.send(end, f"Acomodacao {name_accommodation} ja existente.")
                             else:
-                                #while data_inicio <= data_fim: #Percorre as datas disponíveis
-                                #    available_dates[data_inicio.strftime("%Y-%m-%d")] = True  # Marca como disponível
-                                #   start_date += delta
 
+                                #Definindo a faixa de datas disponíveis
+                                data_inicio = datetime.date(2024, 7, 17)
+                                data_fim = datetime.date(2024, 7, 22)
+                                delta = datetime.timedelta(days=1)
+                                available_dates = {}
+                                while data_inicio <= data_fim: #Percorre as datas disponíveis
+                                    available_dates[data_inicio.strftime("%Y-%m-%d")] = True  # Marca como disponível
+                                    data_inicio = data_inicio + delta #Incrementa a data
+                                    
                                 # Adiciona a acomodação com os dias disponíveis    
                                 accomodations[(name_accommodation, location)] = { #Adiciona a acomodação ao dicionário de acomodações
                                     "owner": end,
                                     "bookings": {}, #Dicionário para armazenar as reservas
-                                    "description": description
+                                    "description": description,
+                                    "available_dates": available_dates
                                 }
+
                                 self.send(end, f"Acomodacao {name_accommodation} criada com sucesso.")
                                 #for _, client_addr in clients.items():
                                     #if client_addr != end:
@@ -102,6 +105,7 @@ class UDPServer():
                     #BOOK
                     elif command.startswith("book"):
                         _, owner, name_accommodation, location, day = command.split(maxsplit=4)
+                        data = datetime(2024, 7, day)
                         if end not in clients.values(): #Verifica se o usuário está logado
                             self.send(end, b"Voce nao esta logado.")
                         else:
@@ -111,7 +115,7 @@ class UDPServer():
                                 accomodation = accomodations[(name_accommodation, location)]
                                 if end == accomodation["owner"]:
                                     self.send(end, b"Voce nao pode reservar sua propria acomodacao.")
-                                elif day not in accomodation["bookings"]:
+                                elif data not in available_dates.keys():
                                     self.send(end, b"Data nao disponivel.")
                                 else:
                                     accomodation["bookings"][day] = end
@@ -135,12 +139,9 @@ class UDPServer():
                                     #self.send(accomodation["owner"], f"Reserva cancelada na acomodacao {name}.")
                     
                     elif command == "list:myacmd":
-                        userName = None
-                        for name, addr in clients.items():
-                            if addr == end:
-                                userName = name
-                                break
-                        if userName:
+                        if end not in clients.values(): #Verifica se o usuário está logado
+                            self.send(end, b"Voce nao esta logado.")
+                        else:
                             my_accomodations = [f"{name}, {location}, descrição: {accomodation['description']}" for (name, location), accomodation in accomodations.items() if accomodation["owner"] == end]
                             self.send(end, "\n".join(my_accomodations).encode())
                     
@@ -162,7 +163,7 @@ class UDPServer():
                         self.send(end, b"Comando invalido.")
                     
                     self.send(end, seq_num.to_bytes(1, 'big')) # Envia um ACK para o cliente.  
-                    #expected_seq_num = 1 if expected_seq_num == 0 else 0 # Alterna o número de sequência esperado entre 0 e 1. #AJEITAR SEQ_NUM
+                    expected_seq_num = 1 if expected_seq_num == 0 else 0 # Alterna o número de sequência esperado entre 0 e 1. #AJEITAR SEQ_NUM
                 else:
                     self.send(end, ((expected_seq_num + 1) % 2).to_bytes(1, 'big')) # Envia um ACK para o cliente.
                     print(f"Erro: pacote fora de ordem. Esperado {expected_seq_num}, recebido {seq_num}.")       

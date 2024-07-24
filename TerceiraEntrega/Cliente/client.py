@@ -52,18 +52,20 @@ class UDPClient():
             except skt.timeout:
                 continue  # Timeout, reenviar pacote
 
-    def send_file(self, command: str, server_addr: tuple[str, int]): # Assume-se que server_addr é uma tupla de string (IP) e int (porta)
+    def send_file(self, server_addr: tuple[str, int]): # Assume-se que server_addr é uma tupla de string (IP) e int (porta)
         seq_num = 1 # Inicializa o número de sequência como 1. O nome do arquivo não é mais relevante aqui.
-        
-        # Verifica se a mensagem não excede o tamanho máximo do buffer.
-        if len(command) <= self.MAX_BUFF - 1:
-            self.send(server_addr, command.encode(), seq_num) # Envia a mensagem.
-        else:
-            # Se a mensagem for maior que o buffer, divide e envia em partes.
-            for i in range(0, len(command), self.MAX_BUFF - 1):
-                part = command[i:i+self.MAX_BUFF - 1]
-                self.send(server_addr, part.encode(), seq_num)
+        while True:
+            command = input("Digite o comando: ")
+            # Verifica se a mensagem não excede o tamanho máximo do buffer.
+            if len(command) <= self.MAX_BUFF - 1:
+                self.send(server_addr, command.encode(), seq_num) # Envia a mensagem.
                 seq_num = 1 if seq_num == 0 else 0 # Alterna o número de sequência.
+            else:
+                # Se a mensagem for maior que o buffer, divide e envia em partes.
+                for i in range(0, len(command), self.MAX_BUFF - 1):
+                    part = command[i:i+self.MAX_BUFF - 1]
+                    self.send(server_addr, part.encode(), seq_num)
+                    seq_num = 1 if seq_num == 0 else 0 # Alterna o número de sequência.
 
         #self.send(server_addr, self.EOF_MARKER, seq_num) # Envia sinal de que a mensagem acabou.
         
@@ -86,11 +88,7 @@ def main():
     #command = input("Digite o comando: ")
     #client.send(addr_target, "Imagem.png".encode(), 0)      #Envia o nome do arquivo para o servidor.
     #print("Finzalizou")
-    while True:
-        command = input("Digite o comando: ")
-        client.send_file(command, addr_target)          #Envia o arquivo para o servidor.
-        if command == "logout":
-            break
+    client.send_file(addr_target)          #Envia o arquivo para o servidor.
 
     #client.send() #Envia o comando para o servidor.
 
