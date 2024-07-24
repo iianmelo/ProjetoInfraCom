@@ -1,11 +1,9 @@
 import socket as skt
-import random
-import time
-import os
+
 
 MAX_BUFF_SIZE = 1024 # Bytes (1KB)
 
-addr_bind = ('192.168.100.100', 8080) # porta que o cliente será vinculado / cada cliente deve ter uma porta diferente
+addr_bind = ('localhost', 8080) # porta que o cliente será vinculado / cada cliente deve ter uma porta diferente
 addr_target = ('127.0.0.1', 7070) # porta que o client irá enviar dados (servidor)
 clients = {}
 accomodations = {}
@@ -25,42 +23,34 @@ class UDPClient():
     def send(self, server_addr: tuple[str, str], msg: bytes, seq_num: int): # envia pacotes do arquivo para o servidor
         seq_num_bytes = seq_num.to_bytes(1, byteorder='big')  # Convertendo o número de sequência para 1 byte
         msg_with_seq = seq_num_bytes + msg  # Concatenando o número de sequência com a mensagem
+        x=0
 
-        while True:
-            self.sckt.sendto(msg_with_seq, server_addr)
-            print(f'Client sent data with seq_num {seq_num}')
-            try:
-                ack, _ = self.sckt.recvfrom(self.MAX_BUFF)
-                if ack == seq_num_bytes:
-                    break  # ACK correto recebido, sair do loop
-            except skt.timeout:
-                continue  # Timeout, reenviar pacote
-           
+        while x<1:
             ##COMANDOS
-            command = input("Digite o comando: ")
-            if command.startswith("login"):
-                self.sckt.sendto(command.encode(), server_addr) #
+            #command = input("Digite o comando: ")
+            if msg.decode().startswith("login"):
+                command = seq_num_bytes + msg
+                self.sckt.sendto(command, server_addr) #
                 response, _ = self.sckt.recvfrom(self.MAX_BUFF)
                 print(response.decode())
-            elif command == "logout":
-                self.sckt.sendto(command.encode(), server_addr)
+            elif msg.decode() == "logout":
+                command = seq_num_bytes + msg
+                self.sckt.sendto(command, server_addr)
                 response, _ = self.sckt.recvfrom(self.MAX_BUFF)
                 print(response.decode())
-                break
-            #elif command.startswith("create"):
-            #    #Escrever código
-            #    continue
-            #elif command.startswith("book"):
-            #    #Escrever código
-            #    continue
-            #elif command.startswith("cancel"):
-            #    #Escrever código
-            #    continue
             else:
-                self.sckt.sendto(command.encode(), server_addr)
+                command = seq_num_bytes + msg
+                self.sckt.sendto(command, server_addr)
                 response, _ = self.sckt.recvfrom(self.MAX_BUFF)
                 print(response.decode())
             #####################
+            try:
+                ack, _ = self.sckt.recvfrom(self.MAX_BUFF)
+                if ack == seq_num_bytes:
+                    x=10
+                    break  # ACK correto recebido, sair do loop
+            except skt.timeout:
+                continue  # Timeout, reenviar pacote
 
     def send_file(self, command: str, server_addr: tuple[str, int]): # Assume-se que server_addr é uma tupla de string (IP) e int (porta)
         seq_num = 1 # Inicializa o número de sequência como 1. O nome do arquivo não é mais relevante aqui.
@@ -75,8 +65,7 @@ class UDPClient():
                 self.send(server_addr, part.encode(), seq_num)
                 seq_num = 1 if seq_num == 0 else 0 # Alterna o número de sequência.
 
-        self.send(server_addr, self.EOF_MARKER, seq_num) # Envia sinal de que a mensagem acabou.
-        print("Message sent.")
+        #self.send(server_addr, self.EOF_MARKER, seq_num) # Envia sinal de que a mensagem acabou.
         
     def listen(self):
         print("Listening (client)...")
@@ -94,10 +83,15 @@ class UDPClient():
 def main():
     client = UDPClient(skt.AF_INET, skt.SOCK_DGRAM, addr_bind, MAX_BUFF_SIZE)
     print("Client started.")
-    client.send(addr_target, 'Imagem.png'.encode(), 0)      #Envia o nome do arquivo para o servidor.
-    print("Name sent")
-    client.send_file('Imagem.png', addr_target)          #Envia o arquivo para o servidor.
+    #command = input("Digite o comando: ")
+    #client.send(addr_target, "Imagem.png".encode(), 0)      #Envia o nome do arquivo para o servidor.
+    #print("Finzalizou")
+    while True:
+        command = input("Digite o comando: ")
+        client.send_file(command, addr_target)          #Envia o arquivo para o servidor.
+        if command == "logout":
+            break
 
-    client.send() #Envia o comando para o servidor.
+    #client.send() #Envia o comando para o servidor.
 
 main()

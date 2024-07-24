@@ -1,7 +1,7 @@
 import socket as skt
 import datetime
 import time
-import os
+
 
 MAX_BUFF_SIZE = 1024 # Bytes (1KB)
 addr_bind = ('127.0.0.1', 7070) # porta que o servidor será vinculado.
@@ -28,7 +28,9 @@ class UDPServer():
         if self.sckt is None:
             raise "Socket not available."
         
-    def send(self, client_addr: tuple[str, str], msg: bytes):
+    def send(self, client_addr: tuple[str, str], msg):
+        if isinstance(msg, str):
+            msg = msg.encode()
         self.sckt.sendto(msg, client_addr)
         time.sleep(0.0001)
 
@@ -74,30 +76,32 @@ class UDPServer():
                             print(f"Usuario {userName} deslogado com sucesso.")
                     #CREATE
                     elif command.startswith("create"):
-                        _, name_accommodation, location = command.split(maxsplit=2)
+                        _, name_accommodation, location, description = command.split(maxsplit=3)
                         if end not in clients.values(): #Verifica se o usuário está logado
                             self.send(end, b"Voce nao esta logado.")
                         else:
                             if (name_accommodation, location) in accomodations:
-                                self.send(end, b"Acomodacao ja existente.")
+                                self.send(end, f"Acomodacao {name_accommodation} ja existente.")
                             else:
-                                while data_inicio <= data_fim: #Percorre as datas disponíveis
-                                    available_dates[data_inicio.strftime("%Y-%m-%d")] = True  # Marca como disponível
-                                    start_date += delta
+                                #while data_inicio <= data_fim: #Percorre as datas disponíveis
+                                #    available_dates[data_inicio.strftime("%Y-%m-%d")] = True  # Marca como disponível
+                                #   start_date += delta
 
                                 # Adiciona a acomodação com os dias disponíveis    
                                 accomodations[(name_accommodation, location)] = { #Adiciona a acomodação ao dicionário de acomodações
                                     "owner": end,
-                                    "bookings": {} #Dicionário para armazenar as reservas
+                                    "bookings": {}, #Dicionário para armazenar as reservas
+                                    "description": description
                                 }
                                 self.send(end, f"Acomodacao {name_accommodation} criada com sucesso.")
-                                for _, client_addr in clients.items():
-                                    if client_addr != end:
-                                        self.send(client_addr, f"[{name}/{end} Adicionou uma nova acomodação!]")
+                                #for _, client_addr in clients.items():
+                                    #if client_addr != end:
+                                        #self.send(client_addr, f"[{name}/{end} Adicionou uma nova acomodação!]")
                                         #talvez seja necessario enviar ACK para cada cliente
+                                        #break
                     #BOOK
                     elif command.startswith("book"):
-                        _, owner, name_accommodation, location, day, room = command.split(maxsplit=5)
+                        _, owner, name_accommodation, location, day = command.split(maxsplit=4)
                         if end not in clients.values(): #Verifica se o usuário está logado
                             self.send(end, b"Voce nao esta logado.")
                         else:
@@ -111,8 +115,8 @@ class UDPServer():
                                     self.send(end, b"Data nao disponivel.")
                                 else:
                                     accomodation["bookings"][day] = end
-                                    self.send(end, f"Reserva realizada com sucesso.")
-                                    self.send(accomodation["owner"], f"Reserva realizada por {name}/{end} na acomodacao {name_accommodation}.")
+                                    self.send(end, b"Reserva realizada com sucesso.")
+                                    #self.send(accomodation["owner"], f"Reserva realizada por {name}/{end} na acomodacao {name_accommodation}.")
                     #CANCEL
                     elif command.startswith("cancel"):
                         _, owner, name, location, day = command.split(maxsplit=4)
@@ -128,7 +132,7 @@ class UDPServer():
                                 else:
                                     del accomodation["bookings"][day]
                                     self.send(end, b"Reserva cancelada com sucesso.")
-                                    self.send(accomodation["owner"], f"Reserva cancelada na acomodacao {name}.")
+                                    #self.send(accomodation["owner"], f"Reserva cancelada na acomodacao {name}.")
                     
                     elif command == "list:myacmd":
                         userName = None
@@ -154,10 +158,14 @@ class UDPServer():
                             my_reservations = [f"[{owner}/{addr[0]}:{addr[1]}] Reserva para {name} em {location} no dia {day}" for (name, location), accomodation in accomodations.items() for day, client in accomodation["bookings"].items() if client == addr]
                             self.send(end, "\n".join(my_reservations).encode())
                     
-                    self.send(addr, seq_num.to_bytes(1, 'big')) # Envia um ACK para o cliente.  
-                    expected_seq_num = 1 if expected_seq_num == 0 else 0 # Alterna o número de sequência esperado entre 0 e 1.
+                    else :
+                        self.send(end, b"Comando invalido.")
+                    
+                    self.send(end, seq_num.to_bytes(1, 'big')) # Envia um ACK para o cliente.  
+                    #expected_seq_num = 1 if expected_seq_num == 0 else 0 # Alterna o número de sequência esperado entre 0 e 1. #AJEITAR SEQ_NUM
                 else:
-                    self.send(end, ((expected_seq_num + 1) % 2).to_bytes(1, 'big')) # Envia um ACK para o cliente.       
+                    self.send(end, ((expected_seq_num + 1) % 2).to_bytes(1, 'big')) # Envia um ACK para o cliente.
+                    print(f"Erro: pacote fora de ordem. Esperado {expected_seq_num}, recebido {seq_num}.")       
             except skt.timeout:
                 continue
             except:
