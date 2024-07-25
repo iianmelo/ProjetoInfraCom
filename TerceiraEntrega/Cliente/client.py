@@ -22,32 +22,18 @@ class UDPClient():
 
     def send(self, server_addr: tuple[str, str], msg: bytes, seq_num: int): # envia pacotes do arquivo para o servidor
         seq_num_bytes = seq_num.to_bytes(1, byteorder='big')  # Convertendo o número de sequência para 1 byte
-        msg_with_seq = seq_num_bytes + msg  # Concatenando o número de sequência com a mensagem
-        x=0
 
-        while x<1:
+        while True:
             ##COMANDOS
             #command = input("Digite o comando: ")
-            if msg.decode().startswith("login"):
-                command = seq_num_bytes + msg
-                self.sckt.sendto(command, server_addr) #
-                response, _ = self.sckt.recvfrom(self.MAX_BUFF)
-                print(response.decode())
-            elif msg.decode() == "logout":
-                command = seq_num_bytes + msg
-                self.sckt.sendto(command, server_addr)
-                response, _ = self.sckt.recvfrom(self.MAX_BUFF)
-                print(response.decode())
-            else:
-                command = seq_num_bytes + msg
-                self.sckt.sendto(command, server_addr)
-                response, _ = self.sckt.recvfrom(self.MAX_BUFF)
-                print(response.decode())
+            command = seq_num_bytes + msg
+            self.sckt.sendto(command, server_addr)
+            response, _ = self.sckt.recvfrom(self.MAX_BUFF)
+            print(response.decode())
             #####################
             try:
                 ack, _ = self.sckt.recvfrom(self.MAX_BUFF)
                 if ack == seq_num_bytes:
-                    x=10
                     break  # ACK correto recebido, sair do loop
             except skt.timeout:
                 continue  # Timeout, reenviar pacote
