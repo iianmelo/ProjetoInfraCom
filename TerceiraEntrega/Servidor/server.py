@@ -9,6 +9,7 @@ addr_target = ('localhost', 8080) # porta que o servidor irá enviar dados (clie
 clients = {}
 accomodations = {}
 provider = {}
+acks = {}
 
 
 #Criando a classe do servidor
@@ -47,8 +48,11 @@ class UDPServer():
                 data, end = self.sckt.recvfrom(self.MAX_BUFF) #Recebe o input e o ack referente ao input.
                 seq_num , data = data[0], data[1:] #Separa o número de sequência do conteudo do input
 
+                if acks.get(end) is None: #Se o ack ainda não tiver sido registrado, o número de sequência é 1.
+                    acks[end] = 1
+
                 #verifica se o número de sequência é o esperado(garantindo a ordem dos pacotes)
-                if seq_num == expected_seq_num:
+                if seq_num == acks[end]:
                     command = data.decode()
                     #LOGIN
                     if command.startswith("login"): #Verifica se o comando é um login
@@ -177,9 +181,10 @@ class UDPServer():
                     
                     self.send(end, seq_num.to_bytes(1, 'big')) # Envia um ACK para o cliente.  
                     expected_seq_num = 1 if expected_seq_num == 0 else 0 # Alterna o número de sequência esperado entre 0 e 1.
+                    acks[end] = 1 if acks[end] == 0 else 0 # Alterna o número de sequência esperado entre 0 e 1.
                 else:
-                    self.send(end, ((expected_seq_num + 1) % 2).to_bytes(1, 'big')) # Envia um ACK para o cliente.
-                    print(f"Erro: pacote fora de ordem. Esperado {expected_seq_num}, recebido {seq_num}.")       
+                    print(f"Erro: pacote fora de ordem. Esperado {acks[end]}, recebido {seq_num}.") # Imprime um erro caso o pacote esteja fora de ordem.
+                    self.send(end, ((acks[end] + 1) % 2).to_bytes(1, 'big')) # Envia um ACK para o cliente.      
             except skt.timeout:
                 continue
             except:
