@@ -3,7 +3,7 @@ import socket as skt
 
 MAX_BUFF_SIZE = 1024 # Bytes (1KB)
 
-addr_bind = ('localhost', 5500) # porta que o cliente será vinculado / cada cliente deve ter uma porta diferente
+addr_bind = ('localhost', 5000) # porta que o cliente será vinculado / cada cliente deve ter uma porta diferente
 addr_target = ('127.0.0.1', 7070) # porta que o client irá enviar dados (servidor)
 clients = {}
 accomodations = {}
@@ -64,7 +64,7 @@ class UDPClient():
 
 def main():
     client = UDPClient(skt.AF_INET, skt.SOCK_DGRAM, addr_bind, MAX_BUFF_SIZE)
-    print("Client started |port: 5500|.")
+    print("Client started |port: 5000|.")
     client.send_file(addr_target)          #Envia o comando para o servidor.
 
 main()
