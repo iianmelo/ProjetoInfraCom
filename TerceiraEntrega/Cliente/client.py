@@ -54,7 +54,7 @@ class UDPClient():
         print("Listening (client)...")
         while True:
             try:
-                nome, end = self.sckt.recvfrom(self.MAX_BUFF) # Recebe o nome do arquivo do servidor, já alterado.
+                nome, end = self.sckt.recvfrom(self.MAX_BUFF) # Recebe a mensagem do servidor.
                 if nome: 
                     break
             except:

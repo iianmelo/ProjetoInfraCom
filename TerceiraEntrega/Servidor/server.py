@@ -11,6 +11,7 @@ accomodations = {}
 provider = {}
 acks = {}
 bookings = {}
+datas = {}
 
 
 #Criando a classe do servidor
@@ -131,16 +132,14 @@ class UDPServer():
                                         self.send(end, b"Data nao disponivel.")
                                     else:
                                         #accomodation["bookings"][data] = provider[end]
-                                        accomodation["bookings"] = {
+                                        #datas[id].append(data)
+                                        bookings[(id, day2)] = {
                                             "data": data,
                                             "name": provider[end],
-                                            "end": end
+                                            "end": end,
+                                            "id": id
                                         }
-                                        bookings[id] = {
-                                            "data": data,
-                                            "name": provider[end],
-                                            "end": end
-                                        }
+                                        accomodation["bookings"] = bookings
                                         #print(data)
                                         accomodation['available_dates'].remove(data)
                                         accomodations[id] = accomodation              #Data reservada
@@ -151,6 +150,8 @@ class UDPServer():
                     #CANCEL
                     elif command.startswith("cancel"):
                         _, name, id, day = command.split(maxsplit=3)
+                        day2 = int(day)
+                        data = (datetime.date(2024, 7, day2)).strftime("%Y-%m-%d")
                         if end not in clients.values(): #Verifica se o usuário está logado
                             self.send(end, b"Voce nao esta logado.")
                         else:
@@ -158,10 +159,12 @@ class UDPServer():
                                 self.send(end, b"Acomodacao nao encontrada.")
                             else:
                                 accomodation = accomodations[id]
-                                if day not in accomodation["bookings"] or accomodation["bookings"][day] != end:
+                                if data in accomodation["available_dates"] or bookings[(id, day2)]["end"] != end:
                                     self.send(end, b"Reserva nao encontrada.")
                                 else:
-                                    del accomodation["bookings"][day]
+                                    bookings.pop((id, day2))                                    
+                                    accomodation["available_dates"].append(data)
+                                    accomodations[id] = accomodation
                                     self.send(end, b"Reserva cancelada com sucesso.")
                                     #Talvez precise enviar ack para o dono da acomodação
                                     #self.send(accomodation["owner"], f"Reserva cancelada na acomodacao {name}.")
@@ -176,8 +179,8 @@ class UDPServer():
                         if end not in clients.values(): #Verifica se o usuário está logado
                             self.send(end, b"Voce nao esta logado.")
                         else:
-                            my_bookings = [f"{booking['data']}" for id, booking in bookings.items()]
-                            my_accomodations = [f"nome: {accomodation['name']}, local: {accomodation['location']}, Dias disponíveis: {', '.join(accomodation['available_dates'])}, Dias indisponíveis: {', '.join(my_bookings)} provider: {accomodation['provider']}" for id, accomodation in accomodations.items() if accomodation["owner"] == end]
+                            my_bookings = [f"{booking['data']} reservado por {booking['name']}" for (id, day2), booking in bookings.items() if accomodations[id]["id"] == id]
+                            my_accomodations = [f"nome: {accomodation['name']}, local: {accomodation['location']}, Dias disponíveis: {', '.join(accomodation['available_dates'])}, Dias indisponíveis: {', '.join(my_bookings)}, provider: {accomodation['provider']}" for id, accomodation in accomodations.items() if accomodation["owner"] == end]
                             self.send(end, "\n".join(my_accomodations).encode())
                     
                     elif command == "list:acmd":
@@ -191,7 +194,8 @@ class UDPServer():
                                 userName = name
                                 break
                         if userName:
-                            my_reservations = [f"[{owner}/{addr[0]}:{addr[1]}] Reserva {id} no dia {day}" for id, accomodation in accomodations.items() for day, client in accomodation["bookings"].items() if client == addr]
+                            dias_reservados = [f"{booking['data']}" for (id, day2), booking in bookings.items() if booking["end"] == end]
+                            my_reservations = [f"[{accomodation['provider']}/{accomodation['owner']}] Nome: {accomodation['name']}, Localização: {accomodation['location']}, Dia(s): {', '.join(dias_reservados)}" for id, accomodation in accomodations.items() ]
                             self.send(end, "\n".join(my_reservations).encode())
                     
                     else :
