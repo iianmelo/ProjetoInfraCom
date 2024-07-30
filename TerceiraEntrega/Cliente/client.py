@@ -1,4 +1,5 @@
 import socket as skt
+import threading
 
 
 MAX_BUFF_SIZE = 1024 # Bytes (1KB)
@@ -26,11 +27,13 @@ class UDPClient():
         while True:
             command = seq_num_bytes + msg
             self.sckt.sendto(command, server_addr)
+            ##
             response, _ = self.sckt.recvfrom(self.MAX_BUFF)
             print(response.decode())
             try:
                 ack, _ = self.sckt.recvfrom(self.MAX_BUFF)
                 if ack == seq_num_bytes:
+                    ##
                     break  # ACK correto recebido, sair do loop
             except skt.timeout:
                 continue  # Timeout, reenviar pacote
@@ -52,19 +55,35 @@ class UDPClient():
 
     def listen(self):
         print("Listening (client)...")
+        #seq_num_bytes = 1
         while True:
-            try:
-                nome, end = self.sckt.recvfrom(self.MAX_BUFF) # Recebe a mensagem do servidor.
-                if nome: 
-                    break
-            except:
-                continue
+            response, _ = self.sckt.recvfrom(self.MAX_BUFF)
+            print(response.decode())
+            #try:
+                #ack, _ = self.sckt.recvfrom(self.MAX_BUFF)
+                #if ack == seq_num_bytes:
+                    ##
+                    #break  # ACK correto recebido, sair do loop
+            #except skt.timeout:
+                #continue  # Timeout, reenviar pacote
        
     
 
 def main():
     client = UDPClient(skt.AF_INET, skt.SOCK_DGRAM, addr_bind, MAX_BUFF_SIZE)
     print("Client started |port: 5500|.")
+    send_thread = threading.Thread(target=client.send_file, args=(addr_target,))
+    #listen_thread = threading.Thread(target=client.listen)
     client.send_file(addr_target)          #Envia o comando para o servidor.
+    #send_thread.start()
+    #listen_thread.start()
+
+    #send_thread.join()
+    #listen_thread.join()
 
 main()
+
+
+
+# ACK de envio; Seq_num com o ack do pacote 
+# ACK de recebimento; Seq_num com o ack do pacote
