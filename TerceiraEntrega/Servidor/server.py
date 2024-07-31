@@ -61,9 +61,9 @@ class UDPServer():
                         if end not in clients.values(): #Verifica se o usuário está logado
                             self.send(end, b"Voce nao esta logado.")
                         else:
-                            del clients[userName]
+                            del clients[provider[end]]
                             self.send(end, b"Logout realizado com sucesso.")
-                            print(f"Usuario {userName} deslogado com sucesso.")
+                            print(f"Usuario {provider[end]} deslogado com sucesso.")
                     #CREATE
                     elif command.startswith("create"):
                         _, name_accommodation, location, id = command.split(maxsplit=3)
