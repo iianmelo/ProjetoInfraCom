@@ -4,7 +4,7 @@ import threading
 
 MAX_BUFF_SIZE = 1024 # Bytes (1KB)
 
-addr_bind = ('localhost', 5500) # porta que o cliente será vinculado / cada cliente deve ter uma porta diferente
+addr_bind = ('localhost', 5000) # porta que o cliente será vinculado / cada cliente deve ter uma porta diferente
 addr_target = ('127.0.0.1', 7070) # porta que o client irá enviar dados (servidor)
 clients = {}
 accomodations = {}
@@ -74,10 +74,8 @@ class UDPClient():
             event.wait()
             try:
                 response, _ = self.sckt.recvfrom(self.MAX_BUFF)
-                if response:
-                    print(response.decode())
-                    print("--------------------------------------")
-                    
+                print(response.decode())
+                print("--------------------------------------")
             except skt.timeout:
                 continue
             except:
@@ -87,7 +85,7 @@ class UDPClient():
 
 def main():
     client = UDPClient(skt.AF_INET, skt.SOCK_DGRAM, addr_bind, MAX_BUFF_SIZE)
-    print("Client started |port: 5500|.")
+    print("Client started |port: 5000|.")
     send_thread = threading.Thread(target=client.send_file, args=(addr_target,))
     listen_thread = threading.Thread(target=client.listen)
     send_thread.start()
