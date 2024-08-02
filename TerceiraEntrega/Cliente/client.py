@@ -8,14 +8,29 @@ addr_bind = ('localhost', 5500) # porta que o cliente será vinculado / cada cli
 addr_target = ('127.0.0.1', 7070) # porta que o client irá enviar dados (servidor)
 clients = {}
 accomodations = {}
+portas = [5500, 5501, 5502, 5503, 5504, 5505, 5506, 5507, 5508, 5509]
+end = 'localhost'
 
 event = threading.Event()
 
 class UDPClient():
-    def __init__(self, sckt_family, sckt_type, sckt_binding, MAX_BUFF):
+    def __init__(self, sckt_family, sckt_type, end, portas, MAX_BUFF):
         self.sckt = skt.socket(sckt_family, sckt_type)
-        self.sckt.bind(sckt_binding)
+
+        #if self.connect_ex(sckt_binding) == 0:
+        #    print("Porta já em uso.")
+        #self.sckt.bind(sckt_binding)
+        for porta in portas:
+            try:
+                self.sckt.bind((end, porta))
+                print(f"Porta {porta} disponível.")
+                self.x = porta
+                break
+            except OSError:
+                print(f"Porta {porta} já em uso.")
         self.sckt.settimeout(0.1)
+
+        
 
 
         if self.sckt is None:
@@ -40,7 +55,7 @@ class UDPClient():
             except skt.timeout:
                 continue  # Timeout, reenviar pacote
 
-    def send_file(self, server_addr: tuple[str, int]): # Assume-se que server_addr é uma tupla de string (IP) e int (porta)
+    def send_command(self, server_addr: tuple[str, int]): # Assume-se que server_addr é uma tupla de string (IP) e int (porta)
         seq_num = 1 # Inicializa o número de sequência como 1. O nome do arquivo não é mais relevante aqui.
         while True:
             command = (input("")).encode()
@@ -86,9 +101,9 @@ class UDPClient():
     
 
 def main():
-    client = UDPClient(skt.AF_INET, skt.SOCK_DGRAM, addr_bind, MAX_BUFF_SIZE)
-    print("Client started |port: 5500|.")
-    send_thread = threading.Thread(target=client.send_file, args=(addr_target,))
+    client = UDPClient(skt.AF_INET, skt.SOCK_DGRAM, end, portas, MAX_BUFF_SIZE)
+    print(f"Client started |port: {client.x}|.")
+    send_thread = threading.Thread(target=client.send_command, args=(addr_target,))
     listen_thread = threading.Thread(target=client.listen)
     send_thread.start()
     listen_thread.start()

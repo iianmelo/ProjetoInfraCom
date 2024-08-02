@@ -40,7 +40,7 @@ class UDPClient():
             except skt.timeout:
                 continue  # Timeout, reenviar pacote
 
-    def send_file(self, server_addr: tuple[str, int]): # Assume-se que server_addr é uma tupla de string (IP) e int (porta)
+    def send_command(self, server_addr: tuple[str, int]): # Assume-se que server_addr é uma tupla de string (IP) e int (porta)
         seq_num = 1 # Inicializa o número de sequência como 1. O nome do arquivo não é mais relevante aqui.
         while True:
             command = (input("")).encode()
@@ -86,7 +86,7 @@ class UDPClient():
 def main():
     client = UDPClient(skt.AF_INET, skt.SOCK_DGRAM, addr_bind, MAX_BUFF_SIZE)
     print("Client started |port: 5000|.")
-    send_thread = threading.Thread(target=client.send_file, args=(addr_target,))
+    send_thread = threading.Thread(target=client.send_command, args=(addr_target,))
     listen_thread = threading.Thread(target=client.listen)
     send_thread.start()
     listen_thread.start()
